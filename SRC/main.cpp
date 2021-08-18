@@ -1,11 +1,30 @@
 #include <bits/stdc++.h>
 #include <TGUI/TGUI.hpp>
+#include "../GLD/GLD.hpp"
+#include "random.hpp"
 
-#define PARTICLE_RADIUS    5
+#define PARTICLE_RADIUS 5
+#define PARTICLE_VELOC  150
 
-std::vector<sf::CircleShape*> genParticles(sf::RenderWindow& window, unsigned int particles_squared)
+using Random = effolkronium::random_static;
+
+namespace brown
 {
-    std::vector<sf::CircleShape*> new_particles;
+
+struct Particle {
+    sf::CircleShape* shape = new sf::CircleShape();
+    sf::Vector2f veloc;
+
+    void update(GLD::Time time){
+        shape->move(veloc.x * time.getDeltaTime(), veloc.y * time.getDeltaTime());
+    }
+};
+
+}
+
+std::vector<brown::Particle*> genParticles(sf::RenderWindow& window, unsigned int particles_squared)
+{
+    std::vector<brown::Particle*> new_particles;
 
     const float window_x = (float)window.getSize().x;
     const float window_y = (float)window.getSize().y;
@@ -16,14 +35,17 @@ std::vector<sf::CircleShape*> genParticles(sf::RenderWindow& window, unsigned in
 
         for (int ii = 0; ii < particles_squared; ii++){
 
-            sf::CircleShape* new_particle = new sf::CircleShape();
-            new_particle->setRadius(PARTICLE_RADIUS);
-            new_particle->setFillColor(sf::Color::Cyan);
+            brown::Particle* new_particle = new brown::Particle();
+            new_particle->shape->setRadius(PARTICLE_RADIUS);
+            new_particle->shape->setFillColor(sf::Color::Cyan);
 
             float new_pos_x = window_x - (particle_dist_x * (i  + 1)) + particle_dist_x / 2;
             float new_pos_y = window_y - (particle_dist_y * (ii + 1)) + particle_dist_y / 2;
 
-            new_particle->setPosition({new_pos_x, new_pos_y});
+            new_particle->shape->setPosition({new_pos_x, new_pos_y});
+
+            new_particle->veloc.x = Random::get<float>(-PARTICLE_VELOC, PARTICLE_VELOC);
+            new_particle->veloc.y = Random::get<float>(-PARTICLE_VELOC, PARTICLE_VELOC);
 
             new_particles.push_back(new_particle);
         }
@@ -36,6 +58,8 @@ int main() {
     sf::RenderWindow window(sf::VideoMode(1280, 720), "TGUI window", sf::Style::Default);
     tgui::Gui gui(window);
 
+    GLD::Time time;
+
     auto slider = tgui::Slider::create();
     slider->setSize("20%", "3%");
     slider->setPosition((float)window.getSize().x * (0.5 - 0.1), "5%");
@@ -44,10 +68,11 @@ int main() {
     slider->setMaximum(10);
     gui.add(slider);
 
-    std::vector<sf::CircleShape*> particles;
+    std::vector<brown::Particle*> particles;
     int last_slider_value = -1;
     while (window.isOpen()){
         sf::Event event;
+        time.getFrameInit();
 
         while (window.pollEvent(event)){
             gui.handleEvent(event);
@@ -63,8 +88,10 @@ int main() {
         }
 
         window.clear({0, 0, 10});
-        for (auto particle : particles) 
-            window.draw(*particle);
+        for (auto particle : particles){
+            particle->update(time);
+            window.draw(*particle->shape);
+        }
         gui.draw();
         window.display();
     }
