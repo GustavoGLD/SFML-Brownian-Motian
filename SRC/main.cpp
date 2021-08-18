@@ -11,18 +11,33 @@ using Random = effolkronium::random_static;
 namespace brown
 {
 
-struct Particle {
+class Particle {
+public:
     sf::CircleShape* shape = new sf::CircleShape();
     sf::Vector2f veloc;
 
-    void update(GLD::Time time){
+    void update(GLD::Time time, sf::RenderWindow& window){
+
+        sf::Vector2f new_position;
+        new_position.x = shape->getPosition().x + veloc.x * time.getDeltaTime();
+        new_position.y = shape->getPosition().y + veloc.y * time.getDeltaTime();
+        
+        if (new_position.x < 0 || new_position.x > window.getSize().x)
+            veloc.x *= -1;
+        if (new_position.y < 0 || new_position.y > window.getSize().y)
+            veloc.y *= -1;
+        
         shape->move(veloc.x * time.getDeltaTime(), veloc.y * time.getDeltaTime());
+    }
+
+    ~Particle(){
+        delete shape;
     }
 };
 
 }
 
-std::vector<brown::Particle*> genParticles(sf::RenderWindow& window, unsigned int particles_squared)
+const std::vector<brown::Particle*> genParticles(sf::RenderWindow& window, unsigned int particles_squared)
 {
     std::vector<brown::Particle*> new_particles;
 
@@ -65,7 +80,7 @@ int main() {
     slider->setPosition((float)window.getSize().x * (0.5 - 0.1), "5%");
     slider->setValue(5);
     slider->setMinimum(3);
-    slider->setMaximum(10);
+    slider->setMaximum(12);
     gui.add(slider);
 
     std::vector<brown::Particle*> particles;
@@ -89,7 +104,7 @@ int main() {
 
         window.clear({0, 0, 10});
         for (auto particle : particles){
-            particle->update(time);
+            particle->update(time, window);
             window.draw(*particle->shape);
         }
         gui.draw();
