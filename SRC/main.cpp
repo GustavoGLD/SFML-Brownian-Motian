@@ -3,10 +3,11 @@
 #include "../GLD/GLD.hpp"
 #include "random.hpp"
 
-#define PARTICLE_RADIUS 5
+#define PARTICLE_RADIUS 30.0f
 #define PARTICLE_VELOC  150
 
 using Random = effolkronium::random_static;
+
 
 namespace brown
 {
@@ -16,7 +17,7 @@ public:
     sf::CircleShape* shape = new sf::CircleShape();
     sf::Vector2f veloc;
 
-    void update(GLD::Time time, sf::RenderWindow& window){
+    void update(GLD::Time time, std::vector<Particle*> particles, sf::RenderWindow& window){
 
         sf::Vector2f new_position;
         new_position.x = shape->getPosition().x + veloc.x * time.getDeltaTime();
@@ -27,7 +28,19 @@ public:
         if (new_position.y < 0 || new_position.y > window.getSize().y)
             veloc.y *= -1;
         
-        shape->move(veloc.x * time.getDeltaTime(), veloc.y * time.getDeltaTime());
+        for (auto particle : particles){
+
+            float _distances       = GLD::Math::distance(*this->shape, *particle->shape);
+            float _radius_together = this->shape->getRadius() + particle->shape->getRadius();
+
+            if (_distances < _radius_together && _distances != 0) {
+                float _angle = GLD::Math::angle(*this->shape, *particle->shape);
+                std::cout << _angle << "\n";
+            }
+            
+        }
+        
+        shape->move(veloc * (float)time.getDeltaTime());
     }
 
     ~Particle(){
@@ -53,6 +66,7 @@ const std::vector<brown::Particle*> genParticles(sf::RenderWindow& window, unsig
             brown::Particle* new_particle = new brown::Particle();
             new_particle->shape->setRadius(PARTICLE_RADIUS);
             new_particle->shape->setFillColor(sf::Color::Cyan);
+            new_particle->shape->setOrigin(sf::Vector2f(1.0f, 1.0f) * PARTICLE_RADIUS);
 
             float new_pos_x = window_x - (particle_dist_x * (i  + 1)) + particle_dist_x / 2;
             float new_pos_y = window_y - (particle_dist_y * (ii + 1)) + particle_dist_y / 2;
@@ -98,13 +112,13 @@ int main() {
 
         if (slider->getValue() != last_slider_value){
             for (auto particle : particles) delete particle;
-            particles = genParticles(window, slider->getValue() * 2);
+            particles = genParticles(window, 3/*slider->getValue() * 2*/);
             last_slider_value = slider->getValue();
         }
 
         window.clear({0, 0, 10});
         for (auto particle : particles){
-            particle->update(time, window);
+            particle->update(time, particles, window);
             window.draw(*particle->shape);
         }
         gui.draw();

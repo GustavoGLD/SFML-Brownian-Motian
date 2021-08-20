@@ -30,3 +30,4 @@
 #include "Shape/GetShape.cpp"
 #include "Axis/Axis.cpp"
 #include "Time/Time.cpp"
+#include "Math/Vector2.cpp"
